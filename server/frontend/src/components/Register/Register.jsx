@@ -1,68 +1,101 @@
-import React, { useState } from 'react';
-import Header from '../Header/Header';
-import './Register.css';
+import React, { useState } from "react";
+import "./Register.css";
+import user_icon from "../assets/person.png"
+import email_icon from "../assets/email.png"
+import password_icon from "../assets/password.png"
+import close_icon from "../assets/close.png"
 
-/**
- * Renders the account registration form and submits the new user details.
- *
- * @returns {JSX.Element} The registration form UI.
- */
 const Register = () => {
-  const [userName, setUserName] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+// State variables for form inputs
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setlastName] = useState("");
 
+// Redirect to home
+  const gohome = ()=> {
+    window.location.href = window.location.origin;
+  }
+
+// Handle form submission
   const register = async (e) => {
     e.preventDefault();
 
-    const res = await fetch('/djangoapp/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userName,
-        password,
-        firstName,
-        lastName,
-      }),
+    let register_url = window.location.origin+"/djangoapp/register";
+
+// Send POST request to register endpoint
+    const res = await fetch(register_url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            "userName": userName,
+            "password": password,
+            "firstName":firstName,
+            "lastName":lastName,
+            "email":email
+        }),
     });
 
     const json = await res.json();
-    if (json.status === 'Authenticated') {
-      sessionStorage.setItem('username', json.userName);
-      window.location.href = '/';
-    } else {
-      alert(json.message || 'Registration failed');
+    if (json.status) {
+	// Save username in session and reload home
+        sessionStorage.setItem('username', json.userName);
+        window.location.href = window.location.origin;
     }
-  };
-
-  return (
-    <div>
-      <Header />
-      <div className="register_panel">
-        <form onSubmit={register}>
-          <h3>Create an account</h3>
-          <div className="input_field">
-            <span>Username</span>
-            <input type="text" onChange={(e) => setUserName(e.target.value)} />
-          </div>
-          <div className="input_field">
-            <span>First Name</span>
-            <input type="text" onChange={(e) => setFirstName(e.target.value)} />
-          </div>
-          <div className="input_field">
-            <span>Last Name</span>
-            <input type="text" onChange={(e) => setLastName(e.target.value)} />
-          </div>
-          <div className="input_field">
-            <span>Password</span>
-            <input type="password" onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <button className="action_button" type="submit">Register</button>
-        </form>
-      </div>
-    </div>
-  );
+    else if (json.error === "Already Registered") {
+      alert("The user with same username is already registered");
+      window.location.href = window.location.origin;
+    }
 };
+
+  return(
+    <div className="register_container" style={{width: "50%"}}>
+      <div className="header" style={{display: "flex",flexDirection: "row", justifyContent: "space-between"}}>
+          <span className="text" style={{flexGrow:"1"}}>SignUp</span> 
+          <div style={{display: "flex",flexDirection: "row", justifySelf: "end", alignSelf: "start" }}>
+          <a href="/" onClick={()=>{gohome()}} style={{justifyContent: "space-between", alignItems:"flex-end"}}>
+            <img style={{width:"1cm"}} src={close_icon} alt="X"/>
+          </a>
+          </div>
+          <hr/>
+        </div>
+
+        <form onSubmit={register}>
+        <div className="inputs">
+          <div className="input">
+            <img src={user_icon} className="img_icon" alt='Username'/>
+            <input type="text"  name="username" placeholder="Username" className="input_field" onChange={(e) => setUserName(e.target.value)}/>
+          </div>
+          <div>
+            <img src={user_icon} className="img_icon" alt='First Name'/>
+            <input type="text"  name="first_name" placeholder="First Name" className="input_field" onChange={(e) => setFirstName(e.target.value)}/>
+          </div>
+
+          <div>
+            <img src={user_icon} className="img_icon" alt='Last Name'/>
+            <input type="text"  name="last_name" placeholder="Last Name" className="input_field" onChange={(e) => setlastName(e.target.value)}/>
+          </div>
+
+          <div>
+            <img src={email_icon} className="img_icon" alt='Email'/>
+            <input type="email"  name="email" placeholder="email" className="input_field" onChange={(e) => setEmail(e.target.value)}/>
+          </div>
+
+          <div className="input">
+            <img src={password_icon} className="img_icon" alt='password'/>
+            <input name="psw" type="password"  placeholder="Password" className="input_field" onChange={(e) => setPassword(e.target.value)}/>
+          </div>
+
+        </div>
+        <div className="submit_panel">
+          <input className="submit" type="submit" value="Register"/>
+        </div>
+      </form>
+      </div>
+  )
+}
 
 export default Register;
