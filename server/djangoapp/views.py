@@ -6,6 +6,7 @@ services used by the capstone project.
 
 import json
 import logging
+from urllib.parse import quote
 
 from django.contrib.auth import authenticate, login, logout as django_logout
 from django.contrib.auth.models import User
@@ -58,6 +59,7 @@ def logout_user(request):
     Returns:
         JsonResponse: JSON payload that clears the current user name.
     """
+
     django_logout(request)
     return JsonResponse({"userName": ""})
 
@@ -109,9 +111,12 @@ def get_dealerships(request, state="All"):
     """
     endpoint = "/fetchDealers"
     if state and str(state).lower() != "all":
-        endpoint = f"/fetchDealers/{state}"
+        endpoint = f"/fetchDealers/{quote(str(state), safe='')}"
 
     response = get_request(endpoint)
+    status_code = response.get("status", 502) if isinstance(response, dict) else 502
+    if status_code != 200:
+        return JsonResponse(response if isinstance(response, dict) else {"status": status_code}, status=status_code)
     dealers = response.get("dealers", []) if isinstance(response, dict) else []
     return JsonResponse({"status": 200, "dealers": dealers})
 
@@ -127,6 +132,9 @@ def get_dealer_reviews(request, dealer_id):
         JsonResponse: JSON payload containing review data and sentiment labels.
     """
     response = get_request(f"/fetchReviews/dealer/{dealer_id}")
+    status_code = response.get("status", 502) if isinstance(response, dict) else 502
+    if status_code != 200:
+        return JsonResponse(response if isinstance(response, dict) else {"status": status_code}, status=status_code)
     reviews = response.get("reviews", []) if isinstance(response, dict) else []
     for review in reviews:
         review["sentiment"] = analyze_review_sentiments(review.get("review", ""))
@@ -144,6 +152,9 @@ def get_dealer_details(request, dealer_id):
         JsonResponse: JSON payload containing dealership details.
     """
     response = get_request(f"/fetchDealer/{dealer_id}")
+    status_code = response.get("status", 502) if isinstance(response, dict) else 502
+    if status_code != 200:
+        return JsonResponse(response if isinstance(response, dict) else {"status": status_code}, status=status_code)
     dealer = response.get("dealer", []) if isinstance(response, dict) else []
     return JsonResponse({"status": 200, "dealer": dealer})
 
@@ -158,6 +169,12 @@ def add_review(request):
     Returns:
         JsonResponse: JSON payload from the review submission workflow.
     """
+    if request.method != "POST":
+        return JsonResponse({"status": 405, "message": "Method not allowed"}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"status": 403, "message": "Unauthorized"}, status=403)
+
     try:
         data = json.loads(request.body.decode("utf-8")) if request.body else {}
     except Exception:

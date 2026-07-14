@@ -7,7 +7,7 @@ and the local dealership review backend, including a fallback to JSON files.
 import json
 import os
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import requests
 from dotenv import load_dotenv
@@ -106,7 +106,7 @@ def analyze_review_sentiments(text):
     Returns:
         str: Sentiment label such as positive, negative, or neutral.
     """
-    request_url = sentiment_analyzer_url.rstrip('/') + '/analyze/' + text.replace(' ', '%20')
+    request_url = sentiment_analyzer_url.rstrip('/') + '/analyze/' + quote(text, safe='')
     try:
         response = requests.get(request_url, timeout=5)
         response.raise_for_status()
