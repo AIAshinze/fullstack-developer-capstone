@@ -15,7 +15,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 backend_url = os.getenv('backend_url', default='http://localhost:3030')
-sentiment_analyzer_url = os.getenv('sentiment_analyzer_url', default='http://localhost:5050/')
+sentiment_analyzer_url = os.getenv(
+    'sentiment_analyzer_url',
+    default='http://localhost:5050/',
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / 'database' / 'data'
@@ -81,17 +84,26 @@ def get_request(endpoint, **kwargs):
             if endpoint == '/fetchDealers':
                 return {'status': 200, 'dealers': dealers}
             state = endpoint.split('/fetchDealers/', 1)[1]
-            filtered_dealers = [dealer for dealer in dealers if dealer.get('state', '').lower() == state.lower()]
+            filtered_dealers = [
+                dealer for dealer in dealers
+                if dealer.get('state', '').lower() == state.lower()
+            ]
             return {'status': 200, 'dealers': filtered_dealers}
         if endpoint.startswith('/fetchDealer/'):
             dealer_id = endpoint.split('/')[-1]
-            dealer = [dealer for dealer in dealers if str(dealer.get('id')) == str(dealer_id)]
+            dealer = [
+                dealer for dealer in dealers
+                if str(dealer.get('id')) == str(dealer_id)
+            ]
             return {'status': 200, 'dealer': dealer}
         if endpoint.startswith('/fetchReviews'):
             reviews = _load_json('reviews.json').get('reviews', [])
             if endpoint.startswith('/fetchReviews/dealer/'):
                 dealer_id = endpoint.split('/')[-1]
-                filtered_reviews = [review for review in reviews if str(review.get('dealership')) == str(dealer_id)]
+                filtered_reviews = [
+                    review for review in reviews
+                    if str(review.get('dealership')) == str(dealer_id)
+                ]
                 return {'status': 200, 'reviews': filtered_reviews}
             return {'status': 200, 'reviews': reviews}
         return {'status': 500, 'message': 'Unable to reach backend'}
@@ -106,7 +118,9 @@ def analyze_review_sentiments(text):
     Returns:
         str: Sentiment label such as positive, negative, or neutral.
     """
-    request_url = sentiment_analyzer_url.rstrip('/') + '/analyze/' + quote(text, safe='')
+    request_url = (
+        sentiment_analyzer_url.rstrip('/') + '/analyze/' + quote(text, safe='')
+    )
     try:
         response = requests.get(request_url, timeout=5)
         response.raise_for_status()
@@ -116,9 +130,17 @@ def analyze_review_sentiments(text):
         return payload
     except Exception:
         lowered = text.lower()
-        if any(word in lowered for word in ['good', 'great', 'excellent', 'amazing', 'love', 'fantastic', 'awesome']):
+        positive_words = [
+            'good', 'great', 'excellent', 'amazing', 'love', 'fantastic',
+            'awesome',
+        ]
+        negative_words = [
+            'bad', 'poor', 'terrible', 'awful', 'hate', 'angry',
+            'disappointed',
+        ]
+        if any(word in lowered for word in positive_words):
             return 'positive'
-        if any(word in lowered for word in ['bad', 'poor', 'terrible', 'awful', 'hate', 'angry', 'disappointed']):
+        if any(word in lowered for word in negative_words):
             return 'negative'
         return 'neutral'
 
@@ -133,15 +155,25 @@ def post_review(data_dict):
         dict: Response payload describing the stored review.
     """
     try:
-        response = requests.post(backend_url.rstrip('/') + '/insert_review', json=data_dict, timeout=5)
+        response = requests.post(
+            backend_url.rstrip('/') + '/insert_review',
+            json=data_dict,
+            timeout=5,
+        )
         response.raise_for_status()
         return response.json()
     except Exception:
         reviews_data = _load_json('reviews.json')
         reviews = reviews_data.get('reviews', [])
-        new_id = max((review.get('id', 0) for review in reviews), default=0) + 1
+        new_id = (
+            max((review.get('id', 0) for review in reviews), default=0) + 1
+        )
         review_payload = {'id': new_id, **data_dict}
         reviews.append(review_payload)
         reviews_data['reviews'] = reviews
         _write_json('reviews.json', reviews_data)
-        return {'status': 200, 'message': 'Review stored locally', 'review': review_payload}
+        return {
+            'status': 200,
+            'message': 'Review stored locally',
+            'review': review_payload,
+        }

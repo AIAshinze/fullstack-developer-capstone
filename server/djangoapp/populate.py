@@ -22,6 +22,18 @@ def initiate():
     }
 
     for make_data in car_make_data:
-        make = CarMake.objects.create(name=make_data['name'], description=make_data['description'])
-        for model_name, model_type, model_year in car_model_data.get(make_data['name'], []):
-            CarModel.objects.create(car_make=make, name=model_name, type=model_type, year=model_year, dealer_id=1)
+        make = CarMake.objects.create(
+            name=make_data['name'],
+            description=make_data['description'],
+        )
+        for model_name, model_type, model_year in car_model_data.get(
+            make_data['name'],
+            []
+        ):
+            CarModel.objects.create(
+                car_make=make,
+                name=model_name,
+                type=model_type,
+                year=model_year,
+                dealer_id=1,
+            )

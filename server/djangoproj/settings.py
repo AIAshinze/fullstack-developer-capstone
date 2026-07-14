@@ -31,12 +31,14 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai',
+    '.theianext-0-labs-prod-misc-tools-us-east-0.'
+    'proxy.cognitiveclass.ai',
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://*.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai',
+    'https://*.theianext-0-labs-prod-misc-tools-us-east-0.'
+    'proxy.cognitiveclass.ai',
 ]
 
 REST_FRAMEWORK = {
@@ -101,8 +103,10 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME':
-        'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.'
+            'UserAttributeSimilarityValidator'
+        ),
     },
     {
         'NAME':
