@@ -1,123 +1,94 @@
 import React, { useEffect, useState } from 'react';
-import "./Dealers.css";
-import "../assets/style.css";
+import { Link } from 'react-router-dom';
+import './Dealers.css';
+import '../assets/style.css';
 import Header from '../Header/Header';
-import review_icon from "../assets/reviewicon.png";
+import reviewIcon from '../assets/reviewicon.png';
 
-/**
- * Displays a searchable list of dealerships and allows authenticated users to
- * navigate to the review submission flow.
- *
- * @returns {JSX.Element} The dealer listing page UI.
- */
+const DEALERS_URL = '/djangoapp/get_dealers';
+
 const Dealers = () => {
-  const [dealersList, setDealersList] = useState([]);
+  const [dealers, setDealers] = useState([]);
   const [states, setStates] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [originalDealers, setOriginalDealers] = useState([]);
+  const [selectedState, setSelectedState] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const isLoggedIn = Boolean(sessionStorage.getItem('username'));
 
-  const dealer_url = "/djangoapp/get_dealers";
+  const loadDealers = async (state = 'All') => {
+    setLoading(true);
+    setError('');
+    const endpoint = state === 'All' ? DEALERS_URL : `${DEALERS_URL}/${encodeURIComponent(state)}`;
 
-  /**
-   * Fetch dealerships filtered by the selected state.
-   *
-   * @param {string} state - The state abbreviation or value "All".
-   */
-  const filterDealers = async (state) => {
-    const endpoint = state && state.toLowerCase() !== 'all' ? `/djangoapp/get_dealers/${state}` : dealer_url;
-    const res = await fetch(endpoint, { method: "GET" });
-    const retobj = await res.json();
-    if (retobj.status === 200) {
-      const state_dealers = Array.from(retobj.dealers);
-      setOriginalDealers(state_dealers);
-      setDealersList(state_dealers);
-    }
-  };
+    try {
+      const response = await fetch(endpoint);
+      const payload = await response.json();
+      if (!response.ok || payload.status !== 200 || !Array.isArray(payload.dealers)) {
+        throw new Error(payload.message || 'Unable to load dealerships.');
+      }
 
-  /**
-   * Update the local search query and filter the current dealer list.
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The text input event.
-   */
-  const handleInputChange = (event) => {
-    const query = event.target.value;
-    setSearchQuery(query);
-    if (!query) {
-      setDealersList(originalDealers);
-      return;
-    }
-
-    const filtered = originalDealers.filter((dealer) =>
-      dealer.state.toLowerCase().includes(query.toLowerCase())
-    );
-    setDealersList(filtered);
-  };
-
-  const handleLostFocus = () => {
-    if (!searchQuery) {
-      setDealersList(originalDealers);
-    }
-  };
-
-  const get_dealers = async () => {
-    const res = await fetch(dealer_url, { method: "GET" });
-    const retobj = await res.json();
-    if (retobj.status === 200) {
-      const all_dealers = Array.from(retobj.dealers);
-      const uniqueStates = Array.from(new Set(all_dealers.map((dealer) => dealer.state)));
-      setStates(uniqueStates);
-      setOriginalDealers(all_dealers);
-      setDealersList(all_dealers);
+      setDealers(payload.dealers);
+      if (state === 'All') {
+        setStates([...new Set(payload.dealers.map((dealer) => dealer.state))].sort());
+      }
+    } catch (requestError) {
+      setDealers([]);
+      setError(requestError.message || 'Unable to load dealerships.');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    get_dealers();
+    loadDealers();
   }, []);
 
-  const isLoggedIn = sessionStorage.getItem("username") != null;
+  const handleFilterSubmit = (event) => {
+    event.preventDefault();
+    loadDealers(selectedState);
+  };
 
   return (
     <div>
       <Header />
-      <table className='table'>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Dealer Name</th>
-            <th>City</th>
-            <th>Address</th>
-            <th>Zip</th>
-            <th>
-              <input
-                type="text"
-                placeholder="Search states..."
-                onChange={handleInputChange}
-                onBlur={handleLostFocus}
-                value={searchQuery}
-              />
-            </th>
-            {isLoggedIn ? <th>Review Dealer</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {dealersList.map((dealer) => (
-            <tr key={dealer.id}>
-              <td>{dealer['id']}</td>
-              <td><a href={'/dealer/' + dealer['id']}>{dealer['full_name']}</a></td>
-              <td>{dealer['city']}</td>
-              <td>{dealer['address']}</td>
-              <td>{dealer['zip']}</td>
-              <td>{dealer['state']}</td>
-              {isLoggedIn ? (
-                <td><a href={`/postreview/${dealer['id']}`}><img src={review_icon} className="review_icon" alt="Post Review" /></a></td>
-              ) : null}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <main className="dealers-page">
+        <h1>Dealerships</h1>
+        <form className="dealer-filter" onSubmit={handleFilterSubmit}>
+          <label htmlFor="state-filter">State</label>
+          <select id="state-filter" value={selectedState} onChange={(event) => setSelectedState(event.target.value)}>
+            <option value="All">Show all</option>
+            {states.map((state) => <option key={state} value={state}>{state}</option>)}
+          </select>
+          <button type="submit">Filter dealerships</button>
+        </form>
+
+        {error && <p className="dealer-message" role="alert">{error}</p>}
+        {loading ? <p className="dealer-message">Loading dealerships…</p> : (
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Dealer Name</th><th>City</th><th>Address</th><th>Zip</th><th>State</th>
+                  {isLoggedIn && <th>Review Dealer</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {dealers.map((dealer) => (
+                  <tr key={dealer.id}>
+                    <td>{dealer.id}</td>
+                    <td><Link to={`/dealer/${dealer.id}`}>{dealer.full_name}</Link></td>
+                    <td>{dealer.city}</td><td>{dealer.address}</td><td>{dealer.zip}</td><td>{dealer.state}</td>
+                    {isLoggedIn && <td><Link to={`/postreview/${dealer.id}`}><img src={reviewIcon} className="review_icon" alt={`Review ${dealer.full_name}`} /></Link></td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!dealers.length && <p className="dealer-message">No dealerships match this state.</p>}
+          </div>
+        )}
+      </main>
     </div>
   );
 };
 
-export default Dealers
+export default Dealers;
