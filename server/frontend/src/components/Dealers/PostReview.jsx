@@ -4,7 +4,11 @@ import "./Dealers.css";
 import "../assets/style.css";
 import Header from '../Header/Header';
 
-
+/**
+ * Shows the review submission form for a selected dealership.
+ *
+ * @returns {JSX.Element} The review posting form UI.
+ */
 const PostReview = () => {
   const [dealer, setDealer] = useState({});
   const [review, setReview] = useState("");

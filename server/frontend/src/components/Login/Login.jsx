@@ -3,13 +3,20 @@ import React, { useState } from 'react';
 import "./Login.css";
 import Header from '../Header/Header';
 
+/**
+ * Renders the login form and submits credentials to the Django authentication endpoint.
+ *
+ * @param {Object} props - Component props.
+ * @param {Function} [props.onClose] - Optional callback invoked when the modal closes.
+ * @returns {JSX.Element} The login form UI.
+ */
 const Login = ({ onClose }) => {
 
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [open,setOpen] = useState(true)
 
-  let login_url = window.location.origin+"/djangoapp/login";
+  let login_url = "/djangoapp/login";
 
   const login = async (e) => {
     e.preventDefault();
